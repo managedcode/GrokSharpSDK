@@ -53,16 +53,24 @@ public sealed class ManagementTests
     }
 
     [Test]
-    public async Task ManagedInstallation_EarlyDisposeJoinsAndRemovesUnverifiedGeneration()
+    [Arguments(CliPackageManager.Npm)]
+    [Arguments(CliPackageManager.Bun)]
+    public async Task ManagedInstallation_EarlyDisposeJoinsAndRemovesUnverifiedGeneration(CliPackageManager manager)
     {
         await using var fixture = await NativeFixture.CreateAsync();
         using var client = new GrokClient(fixture.ClientOptions);
-        var options = CreateInstallationOptions(fixture, CliPackageManager.Npm);
+        var options = CreateInstallationOptions(fixture, manager);
+        var reachedVerification = false;
         await foreach (var update in client.InstallOrUpdateCliAsync(options))
         {
-            await Assert.That(update.Stage).IsEqualTo(CliInstallationStage.PackageManagerStarted);
-            break;
+            await Assert.That(update.Result).IsNull();
+            if (update.Stage == CliInstallationStage.Verifying)
+            {
+                reachedVerification = true;
+                break;
+            }
         }
+        await Assert.That(reachedVerification).IsTrue();
         await Assert.That(Directory.EnumerateFiles(options.InstallationDirectory!, "*", SearchOption.AllDirectories)).IsEmpty();
     }
 

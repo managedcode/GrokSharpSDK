@@ -98,9 +98,27 @@ internal static class CliInstallation
         {
             if (!completed && cleanupConfirmed && Directory.Exists(root))
             {
-                Directory.Delete(root, recursive: true);
+                DeleteDirectory(root);
             }
         }
+    }
+
+    internal static void DeleteDirectory(string path)
+    {
+        var directory = new DirectoryInfo(path);
+        foreach (var entry in directory.EnumerateFileSystemInfos())
+        {
+            if (entry is DirectoryInfo child && (entry.Attributes & FileAttributes.ReparsePoint) == 0)
+            {
+                DeleteDirectory(child.FullName);
+            }
+            else
+            {
+                // Delete the link itself. Recursive Directory.Delete mishandles Windows junctions on .NET 10.
+                entry.Delete();
+            }
+        }
+        directory.Delete();
     }
 
     private static Dictionary<string, string> CreateEnvironment(IReadOnlyDictionary<string, string> configured, string root)

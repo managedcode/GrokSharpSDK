@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using ManagedCode.GrokSharpSDK.Configuration;
+using ManagedCode.GrokSharpSDK.Internal;
 using ManagedCode.GrokSharpSDK.Models;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -106,7 +107,7 @@ internal sealed class NativeFixture : IAsyncDisposable
         catch
         {
             await server.DisposeAsync();
-            Directory.Delete(root, recursive: true);
+            CliInstallation.DeleteDirectory(root);
             throw;
         }
     }
@@ -287,6 +288,6 @@ internal sealed class NativeFixture : IAsyncDisposable
         await _server.StopAsync();
         await _server.DisposeAsync();
         WriteStartupPhaseSummary();
-        Directory.Delete(Root, recursive: true);
+        CliInstallation.DeleteDirectory(Root);
     }
 }
