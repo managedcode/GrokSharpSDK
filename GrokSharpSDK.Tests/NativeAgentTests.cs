@@ -117,6 +117,24 @@ public sealed class NativeAgentTests
         await Assert.That(Directory.GetFiles(fixture.InputDirectory)).IsEmpty();
     }
 
+    [Test]
+    public async Task ClosedPromptFile_StreamsNativeTerminalResult()
+    {
+        await using var fixture = await NativeFixture.CreateAsync();
+        var promptFile = Path.Combine(fixture.InputDirectory, "caller-owned-prompt.txt");
+        await File.WriteAllTextAsync(promptFile, "closed file probe");
+        using var client = new GrokClient(fixture.ClientOptions);
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+        var events = new List<GrokEvent>();
+        await foreach (var update in client.RunFileStreamingAsync(promptFile, fixture.RunOptions, deadline.Token))
+        {
+            events.Add(update);
+        }
+        await Assert.That(events[^1].Type).IsEqualTo("end");
+        await Assert.That(string.Concat(events.Where(update => update.Type == "text").Select(update => update.Text))).IsEqualTo(NativeFixture.Answer);
+        await Assert.That(File.Exists(promptFile)).IsTrue();
+    }
+
     private static bool ContainsToolResult(string request, string marker)
     {
         using var document = JsonDocument.Parse(request);
