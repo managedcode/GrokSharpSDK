@@ -19,6 +19,8 @@ Package IDs:
 - `ManagedCode.GrokSharpSDK` — process execution, native events, sessions and sign-in.
 - `ManagedCode.GrokSharpSDK.Extensions.AI` — optional MEAI adapter and DI.
 
+Package version `1.0.70.1` means Grok CLI `1.0.70`, wrapper revision `1`. Core and adapter always share the same version.
+
 Both libraries target `net10.0`. A package is available only after a successful NuGet publication; check the repository's release status before installing a new version. The native CLI is a separate prerequisite.
 
 ## Run and resume

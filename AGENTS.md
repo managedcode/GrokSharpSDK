@@ -4,6 +4,7 @@ Project: ManagedCode.GrokSharpSDK. .NET 10, C# 14, TUnit, Microsoft.Extensions.A
 
 ## Scope and ownership
 
+- Package versions must use `<upstream-major>.<upstream-minor>.<upstream-patch>.<wrapper-revision>`: the first three parts match the supported upstream CLI/SDK release, and the fourth tracks our wrapper changes for that release. Keep core and adapter packages on the same version; never invent an independent package version sequence, so consumers can identify the upstream baseline directly.
 - Read docs/Architecture/Overview.md before changing code. This repository owns a .NET client for the official Grok Build CLI and its IChatClient adapter.
 - Treat submodules/xai-grok-build as pinned upstream reference material. Follow actual installed CLI capabilities and upstream wire contracts; never invent flags, models or token fields.
 - Keep OAuth, agent tools, model requests, credential storage and session persistence in the native CLI. Do not duplicate them or replace agent execution with raw model API calls.
