@@ -26,6 +26,8 @@ jobs:
           node-version: '22'
       - name: Install official CLI
         run: npm install --prefix artifacts/cli --no-save --package-lock=false @xai-official/grok@1.0.70
+      - name: Select installed native CLI
+        run: node -e 'const fs=require("node:fs"),path=require("node:path");const cli=path.join(process.env.GROK_HOME,"bin",process.platform==="win32"?"grok.exe":"grok");if(!fs.existsSync(cli))throw new Error("Official CLI installation is incomplete");fs.appendFileSync(process.env.GITHUB_ENV,"GROK_TEST_EXECUTABLE="+cli+"\n");'
       - name: Verify formatting
         run: dotnet format ManagedCode.GrokSharpSDK.slnx --verify-no-changes
       - name: Build

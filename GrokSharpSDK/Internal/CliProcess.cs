@@ -120,14 +120,25 @@ internal sealed class CliProcess : IAsyncDisposable
         }
     }
 
-    private async Task ObservePumpsAsync() =>
-        await Task.WhenAll(_stdout, _stderr).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+    private async Task ObserveOutputCompletionAsync(Task drain)
+    {
+        // Read failures belong to the operation. Teardown must still await every pipe.
+        await Task.WhenAll(_stdout, _stderr, drain).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+    }
+
+    private async Task DrainRemainingOutputAsync()
+    {
+        await foreach (var _ in _lines.Reader.ReadAllAsync().ConfigureAwait(false))
+        {
+            // The operation has stopped observing; drain to let native child pipes reach EOF.
+        }
+    }
 
     private async Task DisposeCoreAsync()
     {
+        var outputCompletion = ObserveOutputCompletionAsync(DrainRemainingOutputAsync());
         try
         {
-            await _shutdown.CancelAsync().ConfigureAwait(false);
             if (!_process.HasExited)
             {
                 try
@@ -140,7 +151,7 @@ internal sealed class CliProcess : IAsyncDisposable
                 }
             }
             await _process.WaitForExitAsync().WaitAsync(_terminationTimeout).ConfigureAwait(false);
-            await ObservePumpsAsync().WaitAsync(_terminationTimeout).ConfigureAwait(false);
+            await outputCompletion.WaitAsync(_terminationTimeout).ConfigureAwait(false);
         }
         catch (Exception exception)
         {
@@ -148,6 +159,7 @@ internal sealed class CliProcess : IAsyncDisposable
         }
         finally
         {
+            await _shutdown.CancelAsync().ConfigureAwait(false);
             _process.StandardOutput.Dispose();
             _process.StandardError.Dispose();
             _process.Dispose();

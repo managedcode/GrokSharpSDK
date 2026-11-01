@@ -220,6 +220,8 @@ internal sealed class NativeFixture : IAsyncDisposable
         return installed;
     }
 
+    internal static string RepositoryRoot => FindRepository();
+
     private static string FindRepository()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);

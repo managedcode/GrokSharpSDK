@@ -6,9 +6,9 @@ Executed successfully:
 
 - `dotnet format ManagedCode.GrokSharpSDK.slnx` and `--verify-no-changes`.
 - `dotnet build ManagedCode.GrokSharpSDK.slnx -c Release -warnaserror`: zero warnings and errors.
-- Real-CLI integration suite with `RequiresGrokAuth!=true`: 11 passed, zero failed/skipped.
-- Real xAI device authorization test with `RequiresGrokAuth=true`: 1 passed, zero failed/skipped. The SDK received an HTTPS sign-in URL/user code; observer cancellation and sign-in cancellation completed as expected.
+- Full real-CLI suite after the Windows launcher/pipe-lifecycle correction: 13 passed, zero failed/skipped. This includes 12 deterministic native integration scenarios and one real xAI device authorization scenario.
+- The SDK received an HTTPS sign-in URL/user code; observer cancellation and sign-in cancellation completed as expected. The npm launcher regression completed a real turn, then cancelled another and confirmed child-pipe closure.
 
-Both test invocations used Release, native Microsoft.Testing.Platform, one test module, a maximum of 20 tests, progress/ANSI enabled and quiet MSBuild verbosity. Exact reproducible commands are in [Testing](Testing.md).
+The full test invocation used Release, native Microsoft.Testing.Platform, one test module, a maximum of 20 tests, progress/ANSI enabled and quiet MSBuild verbosity. Exact reproducible commands are in [Testing](Testing.md).
 
 The deterministic suite uses the actual native CLI and its persisted sessions/tools with a local HTTP model endpoint. It does not claim hosted-model qualification. Browser approval and completed account sign-in were not executed. Windows/Linux results require their CI jobs. NuGet publication is separate from these local verification results.

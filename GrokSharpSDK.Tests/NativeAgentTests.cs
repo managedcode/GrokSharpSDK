@@ -93,6 +93,30 @@ public sealed class NativeAgentTests
         await Assert.That(Directory.GetFiles(fixture.InputDirectory)).IsEmpty();
     }
 
+
+    [Test]
+    public async Task NpmLauncher_CompletesTurnAndCancellationClosesChildPipes()
+    {
+        await using var fixture = await NativeFixture.CreateAsync();
+        var executable = Path.Combine(NativeFixture.RepositoryRoot, "artifacts", "cli", "node_modules",
+            OperatingSystem.IsWindows() ? ".bin" : "@xai-official",
+            OperatingSystem.IsWindows() ? "grok.cmd" : "grok/bin/grok-bootstrap.js");
+        using var client = new GrokClient(fixture.ClientOptions with { ExecutablePath = executable });
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+        var result = await client.RunAsync("npm launcher probe", fixture.RunOptions, deadline.Token);
+        await Assert.That(result.Text).IsEqualTo(NativeFixture.Answer);
+        fixture.Scenario = ModelScenario.HoldAfterText;
+        await foreach (var update in client.RunStreamingAsync("npm cancellation probe", fixture.RunOptions, deadline.Token))
+        {
+            if (update.Type == "text")
+            {
+                break;
+            }
+        }
+        await fixture.Disconnected.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        await Assert.That(Directory.GetFiles(fixture.InputDirectory)).IsEmpty();
+    }
+
     private static bool ContainsToolResult(string request, string marker)
     {
         using var document = JsonDocument.Parse(request);

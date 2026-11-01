@@ -9,7 +9,9 @@ dotnet build ManagedCode.GrokSharpSDK.slnx -c Release -warnaserror
 dotnet test --solution ManagedCode.GrokSharpSDK.slnx -c Release --max-parallel-test-modules 1 -v quiet --maximum-parallel-tests 20 --progress on --ansi on --treenode-filter '/*/*/*/*[RequiresGrokAuth!=true]'
 ```
 
-`GROK_TEST_EXECUTABLE` can select an existing real native binary/npm wrapper. Each test gets an isolated native profile, workspace and prompt directory under `tests/.sandbox`. A Kestrel endpoint implements deterministic model responses for the actual CLI. It is not a CLI substitute.
+`GROK_TEST_EXECUTABLE` can select an existing real native binary/npm wrapper. CI sets it to the native executable produced by the official npm install. This separates executable installation from isolated profile creation and avoids unpacking a native binary for every parallel Windows test. A dedicated test still executes the official npm launcher, completes a turn and verifies cancellation/child-pipe cleanup.
+
+Each test gets an isolated native profile, workspace and prompt directory under `tests/.sandbox`. A Kestrel endpoint implements deterministic model responses for the actual CLI. It is not a CLI substitute.
 
 Scenarios cover native session reload, token usage, actual file-tool execution and independently observed tool output, HTTP provider failure, cancellation and remote disconnect, early stream disposal, DI/keyed DI, concurrent conversations, structured output, unsupported MEAI input and native version-only sign-in failure. Auxiliary native requests are allowed; tests do not assume a fixed model-request count.
 
