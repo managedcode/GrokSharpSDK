@@ -1,0 +1,34 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      GROK_HOME: ${{ github.workspace }}/artifacts/install-home
+      GROK_DISABLE_AUTOUPDATER: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install official CLI
+        run: npm install --prefix artifacts/cli --no-save --package-lock=false @xai-official/grok@1.0.70
+      - name: Verify formatting
+        run: dotnet format ManagedCode.GrokSharpSDK.slnx --verify-no-changes
+      - name: Build
+        run: dotnet build ManagedCode.GrokSharpSDK.slnx -c Release -warnaserror
+      - name: Real CLI integration tests
+        run: dotnet test --solution ManagedCode.GrokSharpSDK.slnx -c Release --no-build --max-parallel-test-modules 1 -v quiet --maximum-parallel-tests 20 --progress on --ansi on --treenode-filter "/*/*/*/*[RequiresGrokAuth!=true]"

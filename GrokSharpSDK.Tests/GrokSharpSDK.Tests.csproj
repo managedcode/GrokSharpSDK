@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType><IsPackable>false</IsPackable>
+    <AssemblyName>ManagedCode.GrokSharpSDK.Tests</AssemblyName>
+    <RootNamespace>ManagedCode.GrokSharpSDK.Tests</RootNamespace>
+    <NoWarn>$(NoWarn);CA1707</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../GrokSharpSDK.Extensions.AI/GrokSharpSDK.Extensions.AI.csproj" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="TUnit" />
+    <None Include="Fixtures/**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

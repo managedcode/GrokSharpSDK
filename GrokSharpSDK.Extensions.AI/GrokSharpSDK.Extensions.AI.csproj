@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>ManagedCode.GrokSharpSDK.Extensions.AI</PackageId>
+    <AssemblyName>ManagedCode.GrokSharpSDK.Extensions.AI</AssemblyName>
+    <RootNamespace>ManagedCode.GrokSharpSDK.Extensions.AI</RootNamespace>
+    <Description>Microsoft.Extensions.AI IChatClient adapter for the Grok Build agent CLI.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../GrokSharpSDK/GrokSharpSDK.csproj" />
+    <PackageReference Include="Microsoft.Extensions.AI.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+</Project>

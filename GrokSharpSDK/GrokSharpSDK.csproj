@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>ManagedCode.GrokSharpSDK</PackageId>
+    <AssemblyName>ManagedCode.GrokSharpSDK</AssemblyName>
+    <RootNamespace>ManagedCode.GrokSharpSDK</RootNamespace>
+    <Description>CLI-first .NET SDK for the official Grok Build coding agent.</Description>
+  </PropertyGroup>
+  <ItemGroup><InternalsVisibleTo Include="ManagedCode.GrokSharpSDK.Tests" /></ItemGroup>
+</Project>

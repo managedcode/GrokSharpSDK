@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="GrokSharpSDK/GrokSharpSDK.csproj" />
+  <Project Path="GrokSharpSDK.Extensions.AI/GrokSharpSDK.Extensions.AI.csproj" />
+  <Project Path="GrokSharpSDK.Tests/GrokSharpSDK.Tests.csproj" />
+</Solution>

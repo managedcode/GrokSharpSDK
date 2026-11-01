@@ -1,0 +1,6 @@
+[model.sdk-fixture]
+model = "sdk-fixture"
+name = "SDK fixture"
+base_url = "{{BASE_URL}}"
+api_key = "local-test-key"
+api_backend = "chat_completions"
