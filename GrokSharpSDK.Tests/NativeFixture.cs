@@ -17,6 +17,9 @@ internal enum ModelScenario { Text, ReadFile, Schema, Unauthorized, Hold, HoldAf
 
 internal sealed class NativeFixture : IAsyncDisposable
 {
+    internal const string ProcessConstraint = "NativeCli";
+    // Windows qualification measured 51 seconds for one cold turn; scenarios can start two turns.
+    internal static readonly TimeSpan RunDeadline = TimeSpan.FromMinutes(3);
     internal const string Answer = "SDK fixture response";
     internal const string FileMarker = "native-file-canary-8246";
     private readonly WebApplication _server;

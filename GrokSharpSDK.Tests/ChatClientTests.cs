@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace ManagedCode.GrokSharpSDK.Tests;
 
+[NotInParallel(NativeFixture.ProcessConstraint)]
 public sealed class ChatClientTests
 {
     [Test]
@@ -26,7 +27,7 @@ public sealed class ChatClientTests
         });
         using var provider = services.BuildServiceProvider();
         var client = provider.GetRequiredService<IChatClient>();
-        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+        using var deadline = new CancellationTokenSource(NativeFixture.RunDeadline);
         var updates = new List<ChatResponseUpdate>();
         await foreach (var update in client.GetStreamingResponseAsync(
             [new ChatMessage(ChatRole.User, "adapter-first-turn-673")], cancellationToken: deadline.Token))
@@ -63,7 +64,7 @@ public sealed class ChatClientTests
         using var client = new GrokChatClient(new() { ClientOptions = fixture.ClientOptions, RunOptions = fixture.RunOptions });
         using var schema = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory, "Fixtures", "answer-schema.json")));
         var options = new ChatOptions { ResponseFormat = new ChatResponseFormatJson(schema.RootElement) };
-        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+        using var deadline = new CancellationTokenSource(NativeFixture.RunDeadline);
         var response = await client.GetResponseAsync([new ChatMessage(ChatRole.User, "Give a fixture answer as JSON.")], options, deadline.Token);
         using var result = JsonDocument.Parse(response.Text);
         await Assert.That(result.RootElement.GetProperty("answer").GetString()).IsEqualTo("fixture");
@@ -91,7 +92,7 @@ public sealed class ChatClientTests
         await Assert.ThrowsAsync<NotSupportedException>(async () =>
             await client.GetResponseAsync(messages, new ChatOptions { ResponseFormat = ChatResponseFormat.Json }));
         await Assert.That(fixture.Requests.IsEmpty).IsTrue();
-        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+        using var deadline = new CancellationTokenSource(NativeFixture.RunDeadline);
         var response = await client.GetResponseAsync(messages, cancellationToken: deadline.Token);
         await Assert.That(response.Text).IsEqualTo(NativeFixture.Answer);
     }
@@ -101,7 +102,7 @@ public sealed class ChatClientTests
     {
         await using var fixture = await NativeFixture.CreateAsync();
         using var client = new GrokChatClient(new() { ClientOptions = fixture.ClientOptions, RunOptions = fixture.RunOptions });
-        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+        using var deadline = new CancellationTokenSource(NativeFixture.RunDeadline);
         var responses = await Task.WhenAll(
             client.GetResponseAsync([new ChatMessage(ChatRole.User, "parallel one")], cancellationToken: deadline.Token),
             client.GetResponseAsync([new ChatMessage(ChatRole.User, "parallel two")], cancellationToken: deadline.Token));

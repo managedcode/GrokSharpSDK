@@ -4,13 +4,14 @@ using ManagedCode.GrokSharpSDK.Models;
 
 namespace ManagedCode.GrokSharpSDK.Tests;
 
+[NotInParallel(NativeFixture.ProcessConstraint)]
 public sealed class NativeAgentTests
 {
     [Test]
     public async Task RunAndResume_UsesNativePersistenceAndUsage()
     {
         await using var fixture = await NativeFixture.CreateAsync();
-        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+        using var deadline = new CancellationTokenSource(NativeFixture.RunDeadline);
         GrokRunResult first;
         using (var client = new GrokClient(fixture.ClientOptions))
         {
@@ -37,7 +38,7 @@ public sealed class NativeAgentTests
     {
         await using var fixture = await NativeFixture.CreateAsync(ModelScenario.ReadFile);
         using var client = new GrokClient(fixture.ClientOptions);
-        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+        using var deadline = new CancellationTokenSource(NativeFixture.RunDeadline);
         var events = new List<GrokEvent>();
         await foreach (var update in client.RunStreamingAsync("Read canary.txt with read_file then answer.", fixture.RunOptions, deadline.Token))
         {
@@ -54,7 +55,7 @@ public sealed class NativeAgentTests
     {
         await using var fixture = await NativeFixture.CreateAsync(ModelScenario.Unauthorized);
         using var client = new GrokClient(fixture.ClientOptions);
-        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+        using var deadline = new CancellationTokenSource(NativeFixture.RunDeadline);
         await Assert.ThrowsAsync<InvalidOperationException>(async () =>
             await client.RunAsync("failure probe", fixture.RunOptions, deadline.Token));
         await Assert.That(fixture.Requests.IsEmpty).IsFalse();
@@ -66,7 +67,7 @@ public sealed class NativeAgentTests
     {
         await using var fixture = await NativeFixture.CreateAsync(ModelScenario.Hold);
         using var client = new GrokClient(fixture.ClientOptions);
-        using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+        using var cancellation = new CancellationTokenSource(NativeFixture.RunDeadline);
         var run = client.RunAsync("cancellation probe", fixture.RunOptions, cancellation.Token);
         await fixture.Started.Task.WaitAsync(cancellation.Token);
         await cancellation.CancelAsync();
@@ -80,7 +81,7 @@ public sealed class NativeAgentTests
     {
         await using var fixture = await NativeFixture.CreateAsync(ModelScenario.HoldAfterText);
         using var client = new GrokClient(fixture.ClientOptions);
-        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+        using var deadline = new CancellationTokenSource(NativeFixture.RunDeadline);
         await foreach (var update in client.RunStreamingAsync("early dispose probe", fixture.RunOptions, deadline.Token))
         {
             if (update.Type == "text")
@@ -102,7 +103,7 @@ public sealed class NativeAgentTests
             OperatingSystem.IsWindows() ? ".bin" : "@xai-official",
             OperatingSystem.IsWindows() ? "grok.cmd" : "grok/bin/grok-bootstrap.js");
         using var client = new GrokClient(fixture.ClientOptions with { ExecutablePath = executable });
-        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+        using var deadline = new CancellationTokenSource(NativeFixture.RunDeadline);
         var result = await client.RunAsync("npm launcher probe", fixture.RunOptions, deadline.Token);
         await Assert.That(result.Text).IsEqualTo(NativeFixture.Answer);
         fixture.Scenario = ModelScenario.HoldAfterText;
@@ -124,7 +125,7 @@ public sealed class NativeAgentTests
         var promptFile = Path.Combine(fixture.InputDirectory, "caller-owned-prompt.txt");
         await File.WriteAllTextAsync(promptFile, "closed file probe");
         using var client = new GrokClient(fixture.ClientOptions);
-        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+        using var deadline = new CancellationTokenSource(NativeFixture.RunDeadline);
         var events = new List<GrokEvent>();
         await foreach (var update in client.RunFileStreamingAsync(promptFile, fixture.RunOptions, deadline.Token))
         {

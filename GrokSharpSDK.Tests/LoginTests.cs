@@ -3,6 +3,7 @@ using ManagedCode.GrokSharpSDK.Models;
 
 namespace ManagedCode.GrokSharpSDK.Tests;
 
+[NotInParallel(NativeFixture.ProcessConstraint)]
 public sealed class LoginTests
 {
     [Test]
