@@ -24,6 +24,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - uses: oven-sh/setup-bun@v2
       - name: Install official CLI
         run: npm install --prefix artifacts/cli --no-save --package-lock=false @xai-official/grok@1.0.70
       - name: Select installed native CLI
@@ -37,6 +38,12 @@ jobs:
         run: dotnet test --solution ManagedCode.GrokSharpSDK.slnx -c Release --no-build --max-parallel-test-modules 1 -v quiet --maximum-parallel-tests 20 --progress on --ansi on --treenode-filter "/*/*/*/ClosedPromptFile_StreamsNativeTerminalResult"
       - name: Real CLI integration tests
         run: dotnet test --solution ManagedCode.GrokSharpSDK.slnx -c Release --no-build --max-parallel-test-modules 1 -v quiet --maximum-parallel-tests 20 --progress on --ansi on --treenode-filter "/*/*/*/*[RequiresGrokAuth!=true]"
+      - name: Publish existing integration executable as Native AOT
+        if: runner.os == 'Linux'
+        run: dotnet publish GrokSharpSDK.Tests/GrokSharpSDK.Tests.csproj -c Release -r linux-x64 -p:PublishAot=true -o artifacts/aot
+      - name: Qualify native AOT core and MEAI through real CLI
+        if: runner.os == 'Linux'
+        run: artifacts/aot/ManagedCode.GrokSharpSDK.Tests --treenode-filter "/*/*/*/*[RequiresGrokAuth!=true]" --maximum-parallel-tests 20 --progress on --ansi on --verbosity quiet
       - name: Report allowlisted native startup phases on failure
         if: failure()
         run: node -e 'const fs=require("node:fs"),path=require("node:path");const dir="artifacts/diagnostics";if(fs.existsSync(dir)){for(const file of fs.readdirSync(dir).filter(f=>/^[0-9a-f]{32}\.phases\.json$/.test(f))){const allowed=new Set(["config_load","managed_policy","bootstrap","model_catalog","worker_spawn","leader_connect","acp_initialize","eager_auth","app_init","session_create"]);const phases=JSON.parse(fs.readFileSync(path.join(dir,file),"utf8"));console.log("Native startup phases="+phases.filter(p=>allowed.has(p)).join(","));}}'

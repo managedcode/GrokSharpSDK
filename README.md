@@ -19,7 +19,7 @@ Package IDs:
 - `ManagedCode.GrokSharpSDK` — process execution, native events, sessions and sign-in.
 - `ManagedCode.GrokSharpSDK.Extensions.AI` — optional MEAI adapter and DI.
 
-Package version `1.0.70.1` means Grok CLI `1.0.70`, wrapper revision `1`. Core and adapter always share the same version.
+Package version `1.0.70.2` means Grok CLI `1.0.70`, wrapper revision `2`. Core and adapter always share the same version.
 
 Both libraries target `net10.0`. A package is available only after a successful NuGet publication; check the repository's release status before installing a new version. The native CLI is a separate prerequisite.
 
@@ -87,7 +87,7 @@ var followup = await chat.GetResponseAsync(
     cancellationToken);
 ```
 
-`AddKeyedGrokChatClient("grok", configure)` supports keyed DI. `GetStreamingResponseAsync` forwards text deltas, native activity in `RawRepresentation` and final usage/session metadata.
+`AddKeyedGrokChatClient("grok", configure)` supports keyed DI. `GetStreamingResponseAsync` forwards text deltas, safe activity tags in `AdditionalProperties["managedcode:activity"]`, native events in `RawRepresentation` and final usage/session metadata.
 
 Supported mapping:
 

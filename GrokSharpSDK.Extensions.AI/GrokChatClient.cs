@@ -73,6 +73,16 @@ public sealed class GrokChatClient : IChatClient
                     mapped.Contents.Add(new UsageContent(usage));
                 }
             }
+            var activity = update.Type switch
+            {
+                "thought" => "reasoning",
+                "tool_call" or "tool_call_update" => "native_tool",
+                _ => null,
+            };
+            if (activity is not null)
+            {
+                mapped.AdditionalProperties = new() { ["managedcode:activity"] = activity };
+            }
             yield return mapped;
         }
     }

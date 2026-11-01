@@ -56,8 +56,11 @@ public sealed class NativeAgentTests
         await using var fixture = await NativeFixture.CreateAsync(ModelScenario.Unauthorized);
         using var client = new GrokClient(fixture.ClientOptions);
         using var deadline = new CancellationTokenSource(NativeFixture.RunDeadline);
-        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
-            await client.RunAsync("failure probe", fixture.RunOptions, deadline.Token));
+        CliExecutionFailureException? failure = null;
+        try { await client.RunAsync("failure probe", fixture.RunOptions, deadline.Token); }
+        catch (CliExecutionFailureException exception) { failure = exception; }
+        await Assert.That(failure).IsNotNull();
+        await Assert.That(failure!.RootProcessExitConfirmed).IsTrue();
         await Assert.That(fixture.Requests.IsEmpty).IsFalse();
         await Assert.That(Directory.GetFiles(fixture.InputDirectory)).IsEmpty();
     }

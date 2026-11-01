@@ -71,6 +71,7 @@ internal sealed class NativeFixture : IAsyncDisposable
         ClientOptions = new GrokOptions
         {
             ExecutablePath = ResolveExecutable(),
+            WorkingDirectory = Workspace,
             EnvironmentVariables = environment,
             InheritEnvironmentVariables = false,
             TemporaryDirectory = InputDirectory,
@@ -94,7 +95,7 @@ internal sealed class NativeFixture : IAsyncDisposable
         var server = builder.Build();
         NativeFixture? fixture = null;
         server.MapPost("/v1/chat/completions", (HttpContext context) => fixture!.RespondAsync(context));
-        server.MapGet("/{**path}", () => Results.Json(new { data = Array.Empty<string>() }));
+        server.MapGet("/{**path}", () => Results.Text(new JsonObject { ["data"] = new JsonArray() }.ToJsonString(), "application/json"));
         try
         {
             await server.StartAsync();
@@ -123,8 +124,12 @@ internal sealed class NativeFixture : IAsyncDisposable
         if (Scenario == ModelScenario.Unauthorized)
         {
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-            await context.Response.WriteAsJsonAsync(new { error = new { message = "Fixture authentication rejected", type = "invalid_api_key" } },
-                cancellationToken: context.RequestAborted);
+            await context.Response.WriteAsync(new JsonObject
+            {
+                ["error"] = new JsonObject
+                { ["message"] = "Fixture authentication rejected", ["type"] = "invalid_api_key" }
+            }.ToJsonString(),
+                context.RequestAborted);
             return;
         }
         context.Response.ContentType = "text/event-stream";
@@ -274,7 +279,7 @@ internal sealed class NativeFixture : IAsyncDisposable
             }
         }
         var diagnostics = Directory.CreateDirectory(Path.Combine(FindRepository(), "artifacts", "diagnostics")).FullName;
-        File.WriteAllText(Path.Combine(diagnostics, Path.GetFileName(Root) + ".phases.json"), JsonSerializer.Serialize(phases));
+        File.WriteAllText(Path.Combine(diagnostics, Path.GetFileName(Root) + ".phases.json"), JsonSerializer.Serialize(phases, ManagementJsonContext.Default.ListString));
     }
 
     public async ValueTask DisposeAsync()

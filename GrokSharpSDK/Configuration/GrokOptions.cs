@@ -6,6 +6,7 @@ namespace ManagedCode.GrokSharpSDK.Configuration;
 public sealed record GrokOptions
 {
     public string? ExecutablePath { get; init; }
+    public string? WorkingDirectory { get; init; }
     public CliLaunchCommand? LaunchCommand { get; init; }
     public IReadOnlyDictionary<string, string>? EnvironmentVariables { get; init; }
     public bool InheritEnvironmentVariables { get; init; } = true;

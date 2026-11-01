@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <IsAotCompatible>true</IsAotCompatible>
     <PackageId>ManagedCode.GrokSharpSDK</PackageId>
     <AssemblyName>ManagedCode.GrokSharpSDK</AssemblyName>
     <RootNamespace>ManagedCode.GrokSharpSDK</RootNamespace>

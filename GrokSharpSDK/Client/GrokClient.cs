@@ -6,7 +6,7 @@ using ManagedCode.GrokSharpSDK.Models;
 
 namespace ManagedCode.GrokSharpSDK.Client;
 
-public sealed class GrokClient(GrokOptions? options = null) : IDisposable
+public sealed partial class GrokClient(GrokOptions? options = null) : IDisposable
 {
     private const string PromptPrefix = "grok-sdk-";
     private const string PromptSuffix = ".txt";
@@ -108,8 +108,46 @@ public sealed class GrokClient(GrokOptions? options = null) : IDisposable
             Add(SchemaFlag, schema.GetRawText());
         }
         await using var process = new CliProcess(_options, arguments.ToArray());
+        await using var updates = ReadEventsAsync(process, options, lifetime.Token).GetAsyncEnumerator(lifetime.Token);
+        while (true)
+        {
+            bool available;
+            try
+            {
+                available = await updates.MoveNextAsync().ConfigureAwait(false);
+            }
+            catch (Exception exception)
+            {
+                // Join before reporting a recoverable provider failure. Cleanup failure overrides it.
+                await process.DisposeAsync().ConfigureAwait(false);
+                if (exception is OperationCanceledException)
+                {
+                    throw;
+                }
+                throw new CliExecutionFailureException("Grok Build CLI execution failed.", true, exception);
+            }
+            if (!available)
+            {
+                break;
+            }
+            yield return updates.Current;
+        }
+
+        void Add(string flag, string? value)
+        {
+            if (value is not null)
+            {
+                arguments.Add(flag);
+                arguments.Add(value);
+            }
+        }
+    }
+
+    private static async IAsyncEnumerable<GrokEvent> ReadEventsAsync(CliProcess process, GrokRunOptions options,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
         GrokEvent? terminal = null;
-        await foreach (var output in process.ReadAsync(lifetime.Token).ConfigureAwait(false))
+        await foreach (var output in process.ReadAsync(cancellationToken).ConfigureAwait(false))
         {
             if (output.StandardError || string.IsNullOrWhiteSpace(output.Line))
             {
@@ -133,7 +171,7 @@ public sealed class GrokClient(GrokOptions? options = null) : IDisposable
                 yield return update;
             }
         }
-        var exitCode = await process.WaitForExitAsync(lifetime.Token).ConfigureAwait(false);
+        var exitCode = await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
         if (exitCode != 0)
         {
             throw new InvalidOperationException(string.Concat(NativeFailedMessage,
@@ -146,7 +184,7 @@ public sealed class GrokClient(GrokOptions? options = null) : IDisposable
         }
         if (terminal.StopReason == NativeEventParser.CancelledReason)
         {
-            throw new OperationCanceledException(lifetime.Token);
+            throw new OperationCanceledException(cancellationToken);
         }
         if (options.JsonSchema is not null && (terminal.StructuredOutput is null || NativeEventParser.GetString(terminal.Raw, "structuredOutputError") is not null))
         {
@@ -154,14 +192,6 @@ public sealed class GrokClient(GrokOptions? options = null) : IDisposable
         }
         yield return terminal;
 
-        void Add(string flag, string? value)
-        {
-            if (value is not null)
-            {
-                arguments.Add(flag);
-                arguments.Add(value);
-            }
-        }
     }
 
     public void Dispose()

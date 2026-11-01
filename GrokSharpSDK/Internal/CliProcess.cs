@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Threading.Channels;
 using ManagedCode.GrokSharpSDK.Configuration;
+using ManagedCode.GrokSharpSDK.Models;
 
 namespace ManagedCode.GrokSharpSDK.Internal;
 
@@ -30,6 +31,7 @@ internal sealed class CliProcess : IAsyncDisposable
             RedirectStandardError = true,
             UseShellExecute = false,
             CreateNoWindow = true,
+            WorkingDirectory = options.WorkingDirectory ?? Environment.CurrentDirectory,
         };
         foreach (var argument in launch.PrefixArguments.Concat(arguments))
         {
@@ -42,19 +44,33 @@ internal sealed class CliProcess : IAsyncDisposable
         }
         _terminationTimeout = options.ProcessTerminationTimeout;
         _process = new Process { StartInfo = info };
+        var started = false;
         try
         {
-            if (!_process.Start())
+            started = _process.Start();
+            if (!started)
             {
                 throw new InvalidOperationException(StartFailedMessage);
             }
             _process.StandardInput.Close();
         }
-        catch
+        catch (Exception exception)
         {
-            _process.Dispose();
-            _shutdown.Dispose();
-            throw;
+            try
+            {
+                if (started && !_process.HasExited)
+                {
+                    _process.Kill(entireProcessTree: true);
+                    _process.WaitForExit((int)Math.Min(_terminationTimeout.TotalMilliseconds, int.MaxValue));
+                }
+            }
+            finally
+            {
+                _process.Dispose();
+                _shutdown.Dispose();
+            }
+            // Before pipe pumps exist, a post-start failure cannot prove complete child/pipe cleanup.
+            throw new CliExecutionFailureException(StartFailedMessage, !started, exception);
         }
         _stdout = PumpAsync(_process.StandardOutput, false);
         _stderr = PumpAsync(_process.StandardError, true);
@@ -155,7 +171,7 @@ internal sealed class CliProcess : IAsyncDisposable
         }
         catch (Exception exception)
         {
-            throw new InvalidOperationException(CleanupFailedMessage, exception);
+            throw new CliExecutionFailureException(CleanupFailedMessage, false, exception);
         }
         finally
         {

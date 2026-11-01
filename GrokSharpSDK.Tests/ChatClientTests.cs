@@ -111,5 +111,23 @@ public sealed class ChatClientTests
         await Assert.That(responses[0].ConversationId == responses[1].ConversationId).IsFalse();
     }
 
+    [Test]
+    public async Task NativeTool_StreamingEmitsSafeActivityAndCompletes()
+    {
+        await using var fixture = await NativeFixture.CreateAsync(ModelScenario.ReadFile);
+        using var client = new GrokChatClient(new() { ClientOptions = fixture.ClientOptions, RunOptions = fixture.RunOptions });
+        using var deadline = new CancellationTokenSource(NativeFixture.RunDeadline);
+        var updates = new List<ChatResponseUpdate>();
+        await foreach (var update in client.GetStreamingResponseAsync(
+            [new ChatMessage(ChatRole.User, "Read canary.txt with read_file then answer.")], cancellationToken: deadline.Token))
+        {
+            updates.Add(update);
+        }
+        await Assert.That(updates.Any(update => update.AdditionalProperties?.TryGetValue("managedcode:activity", out var value) == true &&
+            value is string text && text == "native_tool")).IsTrue();
+        await Assert.That(string.Concat(updates.Select(update => update.Text))).IsEqualTo(NativeFixture.Answer);
+        await Assert.That(fixture.Requests.Any(request => request.Contains(NativeFixture.FileMarker, StringComparison.Ordinal))).IsTrue();
+    }
+
     private static int Count(string text, string value) => text.Split(value, StringSplitOptions.None).Length - 1;
 }

@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <IsAotCompatible>true</IsAotCompatible>
     <PackageId>ManagedCode.GrokSharpSDK.Extensions.AI</PackageId>
     <AssemblyName>ManagedCode.GrokSharpSDK.Extensions.AI</AssemblyName>
     <RootNamespace>ManagedCode.GrokSharpSDK.Extensions.AI</RootNamespace>

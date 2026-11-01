@@ -11,6 +11,10 @@ public static class GrokCliCompatibility
 public sealed class CliLaunchCommand
 {
     public CliLaunchCommand(string executablePath, params string[] prefixArguments)
+        : this(executablePath, (IReadOnlyList<string>)prefixArguments) { }
+
+    [JsonConstructor]
+    public CliLaunchCommand(string executablePath, IReadOnlyList<string> prefixArguments)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(executablePath);
         ArgumentNullException.ThrowIfNull(prefixArguments);
@@ -19,7 +23,7 @@ public sealed class CliLaunchCommand
             throw new FileNotFoundException("LaunchCommand requires an existing absolute executable path.", executablePath);
         }
         ExecutablePath = executablePath;
-        PrefixArguments = Array.AsReadOnly((string[])prefixArguments.Clone());
+        PrefixArguments = Array.AsReadOnly(prefixArguments.ToArray());
     }
     public string ExecutablePath { get; }
     public IReadOnlyList<string> PrefixArguments { get; }

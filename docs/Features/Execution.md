@@ -17,3 +17,13 @@ Native references at the pinned upstream revision:
 - [Headless execution](https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-pager/docs/user-guide/14-headless-mode.md)
 - [Custom models](https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-pager/docs/user-guide/11-custom-models.md)
 - [Device sign-in](https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-login/src/device_code.rs)
+
+## CLI metadata and managed installation
+
+`GetCliMetadata(timeout, maximumOutputCharacters)` reads native `--version` and `models` without an inference request. Model IDs and the default come only from the installed CLI catalog. An invalid or incomplete catalog fails visibly. Existing installations can report versions different from the SDK target.
+
+`InstallOrUpdateCliAsync` installs the pinned official npm package into an SDK-owned, unique generation. npm runs through an explicit Node/npm-cli.js pair; Bun uses its documented [trusted lifecycle installation](https://bun.com/docs/pm/cli/install). Installation receives an explicit safe environment, isolated home/config/cache/temp directories and a private GROK_HOME. It never reads a creator's npm configuration or credentials. Output updates contain counts only. The native binary extracted by the official package must report the exact target version before its immutable launch descriptor is returned. Cancelled or incomplete generations are removed after confirmed process cleanup; unconfirmed cleanup keeps the generation for investigation and blocks safe replacement.
+
+Launch descriptors use standard System.Text.Json constructor binding and source generation. A persisted launch can be reloaded without a custom converter. The consumer owns descriptor storage and retirement of previously successful generations.
+
+Execution and installation failures expose `CliExecutionFailureException.RootProcessExitConfirmed`. A confirmed failure is reported only after the operation joins its process and readers. An unconfirmed cleanup exception overrides cancellation or the provider error; consumers must retain their execution fence. Native tool events expose only the standard `native_tool` activity tag and thoughts expose `reasoning`; raw native records remain caller-owned data.
