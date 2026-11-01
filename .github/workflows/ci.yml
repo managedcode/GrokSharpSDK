@@ -32,5 +32,11 @@ jobs:
         run: dotnet format ManagedCode.GrokSharpSDK.slnx --verify-no-changes
       - name: Build
         run: dotnet build ManagedCode.GrokSharpSDK.slnx -c Release -warnaserror
+      - name: Qualify caller-owned prompt file on Windows
+        if: runner.os == 'Windows'
+        run: dotnet test --solution ManagedCode.GrokSharpSDK.slnx -c Release --no-build --max-parallel-test-modules 1 -v quiet --maximum-parallel-tests 20 --progress on --ansi on --treenode-filter "/*/*/*/ClosedPromptFile_StreamsNativeTerminalResult"
       - name: Real CLI integration tests
         run: dotnet test --solution ManagedCode.GrokSharpSDK.slnx -c Release --no-build --max-parallel-test-modules 1 -v quiet --maximum-parallel-tests 20 --progress on --ansi on --treenode-filter "/*/*/*/*[RequiresGrokAuth!=true]"
+      - name: Report allowlisted native startup phases on failure
+        if: failure()
+        run: node -e 'const fs=require("node:fs"),path=require("node:path");const dir="artifacts/diagnostics";if(fs.existsSync(dir)){for(const file of fs.readdirSync(dir).filter(f=>/^[0-9a-f]{32}\.phases\.json$/.test(f))){const allowed=new Set(["config_load","managed_policy","bootstrap","model_catalog","worker_spawn","leader_connect","acp_initialize","eager_auth","app_init","session_create"]);const phases=JSON.parse(fs.readFileSync(path.join(dir,file),"utf8"));console.log("Native startup phases="+phases.filter(p=>allowed.has(p)).join(","));}}'

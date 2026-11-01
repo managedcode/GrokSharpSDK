@@ -232,10 +232,53 @@ internal sealed class NativeFixture : IAsyncDisposable
         return directory?.FullName ?? throw new DirectoryNotFoundException("Repository root was not found.");
     }
 
+
+    private void WriteStartupPhaseSummary()
+    {
+        // Export only labels from upstream's closed StartupPhase enum. Never export raw native records.
+        string[] known = ["config_load", "managed_policy", "bootstrap", "model_catalog", "worker_spawn",
+            "leader_connect", "acp_initialize", "eager_auth", "app_init", "session_create"];
+        var phases = new List<string>();
+        var log = Path.Combine(Root, "grok", "logs", "unified.jsonl");
+        if (File.Exists(log))
+        {
+            using var stream = new FileStream(log, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+            using var reader = new StreamReader(stream);
+            while (reader.ReadLine() is { } line)
+            {
+                JsonDocument entry;
+                try
+                {
+                    entry = JsonDocument.Parse(line);
+                }
+                catch (JsonException)
+                {
+                    // A process terminated during a write may leave a partial final record.
+                    continue;
+                }
+                using (entry)
+                {
+                    var root = entry.RootElement;
+                    if (root.TryGetProperty("msg", out var message) &&
+                        message.GetString() is "startup phase" or "startup phase running long" &&
+                        root.TryGetProperty("ctx", out var context) &&
+                        context.TryGetProperty("phase", out var value) &&
+                        value.GetString() is { } phase && known.Contains(phase, StringComparer.Ordinal))
+                    {
+                        phases.Add(phase);
+                    }
+                }
+            }
+        }
+        var diagnostics = Directory.CreateDirectory(Path.Combine(FindRepository(), "artifacts", "diagnostics")).FullName;
+        File.WriteAllText(Path.Combine(diagnostics, Path.GetFileName(Root) + ".phases.json"), JsonSerializer.Serialize(phases));
+    }
+
     public async ValueTask DisposeAsync()
     {
         await _server.StopAsync();
         await _server.DisposeAsync();
+        WriteStartupPhaseSummary();
         Directory.Delete(Root, recursive: true);
     }
 }
