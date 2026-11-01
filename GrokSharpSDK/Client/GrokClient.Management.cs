@@ -64,9 +64,15 @@ public sealed partial class GrokClient
             catch (Exception exception)
             {
                 await updates.DisposeAsync().ConfigureAwait(false);
-                if (exception is OperationCanceledException or CliExecutionFailureException)
+                if (exception is CliExecutionFailureException ||
+                    exception is OperationCanceledException && lifetime.IsCancellationRequested)
                 {
                     throw;
+                }
+                if (exception is OperationCanceledException)
+                {
+                    throw new CliExecutionFailureException("Grok CLI installation exceeded its deadline.", true,
+                        new TimeoutException("The package-manager installation deadline expired.", exception));
                 }
                 throw new CliExecutionFailureException("Grok CLI installation failed.", true, exception);
             }

@@ -74,6 +74,25 @@ public sealed class ManagementTests
         await Assert.That(Directory.EnumerateFiles(options.InstallationDirectory!, "*", SearchOption.AllDirectories)).IsEmpty();
     }
 
+    [Test]
+    public async Task ManagedInstallation_DeadlineReportsConfirmedFailureAndRemovesGeneration()
+    {
+        await using var fixture = await NativeFixture.CreateAsync();
+        using var client = new GrokClient(fixture.ClientOptions);
+        // Force the real package manager to exceed the installation budget; no fake process is substituted.
+        var options = CreateInstallationOptions(fixture, CliPackageManager.Npm) with { InstallTimeout = TimeSpan.FromMilliseconds(1) };
+        CliExecutionFailureException? failure = null;
+        try
+        {
+            await foreach (var _ in client.InstallOrUpdateCliAsync(options)) { }
+        }
+        catch (CliExecutionFailureException exception) { failure = exception; }
+        await Assert.That(failure).IsNotNull();
+        await Assert.That(failure!.RootProcessExitConfirmed).IsTrue();
+        await Assert.That(failure.InnerException is TimeoutException).IsTrue();
+        await Assert.That(Directory.EnumerateFiles(options.InstallationDirectory!, "*", SearchOption.AllDirectories)).IsEmpty();
+    }
+
     private static CliInstallationOptions CreateInstallationOptions(NativeFixture fixture, CliPackageManager manager)
     {
         var executable = FindExecutable(manager == CliPackageManager.Npm ? "node" : "bun");

@@ -27,3 +27,5 @@ Native references at the pinned upstream revision:
 Launch descriptors use standard System.Text.Json constructor binding and source generation. A persisted launch can be reloaded without a custom converter. The consumer owns descriptor storage and retirement of previously successful generations.
 
 Execution and installation failures expose `CliExecutionFailureException.RootProcessExitConfirmed`. A confirmed failure is reported only after the operation joins its process and readers. An unconfirmed cleanup exception overrides cancellation or the provider error; consumers must retain their execution fence. Native tool events expose only the standard `native_tool` activity tag and thoughts expose `reasoning`; raw native records remain caller-owned data.
+
+An expired internal installation deadline is a confirmed process failure after joining cleanup, with TimeoutException as its cause. Caller cancellation remains cancellation. This distinction lets a Worker retry a failed installation without treating an ordinary deadline as an unknown live process.
